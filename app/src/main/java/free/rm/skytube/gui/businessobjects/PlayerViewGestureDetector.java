@@ -78,12 +78,6 @@ public abstract class PlayerViewGestureDetector implements View.OnTouchListener 
 	public abstract void onGestureDone();
 
 	/**
-	 * User swiped from top to bottom or from bottom to top at the left side of the view.
-	 */
-	public abstract void adjustVolumeLevel(double adjustPercent);
-
-
-	/**
 	 * User swiped from left to right or from right to left at any place of the view except 20% from the right.
 	 */
 	public abstract void adjustVideoPosition(double adjustPercent, boolean forwardDirection);
@@ -149,11 +143,8 @@ public abstract class PlayerViewGestureDetector implements View.OnTouchListener 
 
 				if (currentGestureEvent == SwipeGestureType.DESCRIPTION) {
 					onVideoDescriptionGesture();
-				} else if (currentGestureEvent == SwipeGestureType.VOLUME) {
-					// use half of volumeRect's height to calculate percent.
-					double percent = yDistance / (getVolumeRect(playerViewRect).height() / 2f) * -1f;
-					adjustVolumeLevel(percent);
-				} else if (currentGestureEvent == SwipeGestureType.SEEK) {
+				}
+				else if (currentGestureEvent == SwipeGestureType.SEEK) {
 					double percent = xDistance / getPlayerViewRect().width();
 					adjustVideoPosition(percent, distanceX < 0);
 				}
@@ -197,8 +188,6 @@ public abstract class PlayerViewGestureDetector implements View.OnTouchListener 
 			} else if (Math.abs(currentY - startY) >= SWIPE_THRESHOLD) {
 				if (getDescriptionRect(playerViewRect).contains((int) startX, (int) startY) && diffY > 0) {
 					return SwipeGestureType.DESCRIPTION;
-				} else if (getVolumeRect(playerViewRect).contains((int) startX, (int) startY)) {
-					return SwipeGestureType.VOLUME;
 				}
 			}
 
@@ -206,20 +195,10 @@ public abstract class PlayerViewGestureDetector implements View.OnTouchListener 
 		}
 
 		/**
-		 * Here we decide in what place of the screen user should swipe to get a new volume value.
-		 */
-		private Rect getVolumeRect(final Rect playerViewRect) {
-			return new Rect(0, (int)(playerViewRect.bottom * 0.2),
-					playerViewRect.right / 2, playerViewRect.bottom);
-		}
-
-		/**
 		 * Here we choose a rect for swipe which then will be used to open the description view.
 		 */
 		private Rect getDescriptionRect(final Rect playerViewRect) {
-			// 20% from bottom side will trigger description view
-			return new Rect(0, (int) (playerViewRect.bottom - (playerViewRect.bottom * 0.2)),
-					playerViewRect.right, playerViewRect.bottom);
+			return new Rect(0,0, playerViewRect.right, (int) (playerViewRect.bottom - (playerViewRect.bottom * 0.2)));
 		}
 
 	}

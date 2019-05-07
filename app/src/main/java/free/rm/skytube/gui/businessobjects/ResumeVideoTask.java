@@ -56,23 +56,7 @@ public class ResumeVideoTask {
         if(!SkyTubeApp.getPreferenceManager().getBoolean(context.getString(R.string.pref_key_disable_playback_status), false)) {
             final PlaybackStatusDb.VideoWatchedStatus watchStatus = PlaybackStatusDb.getVideoDownloadsDb().getVideoWatchedStatus(youTubeVideo);
             if (watchStatus.getPosition() > 0) {
-                new SkyTubeMaterialDialog(context)
-                        .content(R.string.should_resume)
-                        .positiveText(R.string.resume)
-                        .onPositive(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                callback.loadVideo((int) watchStatus.getPosition());
-                            }
-                        })
-                        .negativeText(R.string.no)
-                        .onNegative(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                callback.loadVideo(0);
-                            }
-                        })
-                        .show();
+                callback.loadVideo((int) watchStatus.getPosition());
             } else {
                 callback.loadVideo(0);
             }

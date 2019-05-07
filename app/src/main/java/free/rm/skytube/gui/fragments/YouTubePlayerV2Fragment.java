@@ -751,56 +751,6 @@ public class YouTubePlayerV2Fragment extends ImmersiveModeFragment implements Yo
 		}
 
 		@Override
-		public void adjustVolumeLevel(double adjustPercent) {
-			if (disableGestures) {
-				return;
-			}
-
-			// We are setting volume percent to a value that should be from -1.0 to 1.0. We need to limit it here for these values first
-			if (adjustPercent < -1.0f) {
-				adjustPercent = -1.0f;
-			} else if (adjustPercent > 1.0f) {
-				adjustPercent = 1.0f;
-			}
-
-			AudioManager audioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
-			final int STREAM = AudioManager.STREAM_MUSIC;
-
-			// Max volume will return INDEX of volume not the percent. For example, on my device it is 15
-			int maxVolume = audioManager.getStreamMaxVolume(STREAM);
-			if (maxVolume == 0) return;
-
-			if (startVolumePercent < 0) {
-				// We are getting actual volume index (NOT volume but index). It will be >= 0.
-				int curVolume = audioManager.getStreamVolume(STREAM);
-				// And counting percents of maximum volume we have now
-				startVolumePercent = curVolume * 1.0f / maxVolume;
-			}
-			// Should be >= 0 and <= 1
-			double targetPercent = startVolumePercent + adjustPercent;
-			if (targetPercent > 1.0f) {
-				targetPercent = 1.0f;
-			} else if (targetPercent < 0) {
-				targetPercent = 0;
-			}
-
-			// Calculating index. Test values are 15 * 0.12 = 1 ( because it's int)
-			int index = (int) (maxVolume * targetPercent);
-			if (index > maxVolume) {
-				index = maxVolume;
-			} else if (index < 0) {
-				index = 0;
-			}
-			audioManager.setStreamVolume(STREAM, index, 0);
-
-			indicatorImageView.setImageResource(R.drawable.ic_volume);
-			indicatorTextView.setText(index * 100 / maxVolume + "%");
-
-			// Show indicator. It will be hidden once onGestureDone will be called
-			showIndicator();
-		}
-
-		@Override
 		public void adjustVideoPosition(double adjustPercent, boolean forwardDirection) {
 			if (disableGestures) {
 				return;
