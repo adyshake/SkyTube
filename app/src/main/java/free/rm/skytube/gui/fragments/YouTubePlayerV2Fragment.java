@@ -125,10 +125,8 @@ public class YouTubePlayerV2Fragment extends ImmersiveModeFragment implements Yo
 	private ClickableLinksTextView	videoDescriptionTextView = null;
 	private View				    loadingVideoView = null;
 	private SlidingDrawer           videoDescriptionDrawer = null;
-	private SlidingDrawer		    commentsDrawer = null;
 	private View				    commentsProgressBar = null,
 									noVideoCommentsView = null;
-	private CommentsAdapter         commentsAdapter = null;
 	private ExpandableListView      commentsExpandableListView = null;
 
 
@@ -241,15 +239,6 @@ public class YouTubePlayerV2Fragment extends ImmersiveModeFragment implements Yo
 		commentsExpandableListView = view.findViewById(R.id.commentsExpandableListView);
 		commentsProgressBar = view.findViewById(R.id.comments_progress_bar);
 		noVideoCommentsView = view.findViewById(R.id.no_video_comments_text_view);
-		commentsDrawer = view.findViewById(R.id.comments_drawer);
-		commentsDrawer.setOnDrawerOpenListener(new OnDrawerOpenListener() {
-			@Override
-			public void onDrawerOpened() {
-				if (commentsAdapter == null) {
-					commentsAdapter = new CommentsAdapter(getActivity(), youTubeVideo.getId(), commentsExpandableListView, commentsProgressBar, noVideoCommentsView);
-				}
-			}
-		});
 	}
 
 
@@ -678,7 +667,6 @@ public class YouTubePlayerV2Fragment extends ImmersiveModeFragment implements Yo
 		private RelativeLayout      indicatorView = null;
 
 		private boolean             isControllerVisible = true;
-		private VideoBrightness     videoBrightness;
 		private float               startVolumePercent = -1.0f;
 		private long                startVideoTime = -1;
 
@@ -691,7 +679,6 @@ public class YouTubePlayerV2Fragment extends ImmersiveModeFragment implements Yo
 		PlayerViewGestureHandler() {
 			super(getContext());
 
-			videoBrightness = new VideoBrightness(getActivity(), disableGestures);
 			playerView.setControllerVisibilityListener(new PlayerControlView.VisibilityListener() {
 				@Override
 				public void onVisibilityChange(int visibility) {
@@ -706,13 +693,6 @@ public class YouTubePlayerV2Fragment extends ImmersiveModeFragment implements Yo
 			indicatorImageView = view.findViewById(R.id.indicatorImageView);
 			indicatorTextView = view.findViewById(R.id.indicatorTextView);
 		}
-
-
-		@Override
-		public void onCommentsGesture() {
-			commentsDrawer.animateOpen();
-		}
-
 
 		@Override
 		public void onVideoDescriptionGesture() {
@@ -747,11 +727,6 @@ public class YouTubePlayerV2Fragment extends ImmersiveModeFragment implements Yo
 		 * Hide or display the HUD depending if the HUD is currently visible or not.
 		 */
 		private boolean showOrHideHud() {
-			if (commentsDrawer.isOpened()) {
-				commentsDrawer.animateClose();
-				return !isControllerVisible;
-			}
-
 			if (videoDescriptionDrawer.isOpened()) {
 				videoDescriptionDrawer.animateClose();
 				return !isControllerVisible;
@@ -770,30 +745,10 @@ public class YouTubePlayerV2Fragment extends ImmersiveModeFragment implements Yo
 
 		@Override
 		public void onGestureDone() {
-			videoBrightness.onGestureDone();
 			startVolumePercent = -1.0f;
 			startVideoTime = -1;
 			hideIndicator();
 		}
-
-
-		@Override
-		public void adjustBrightness(double adjustPercent) {
-			if (disableGestures) {
-				return;
-			}
-
-			// adjust the video's brightness
-			videoBrightness.setVideoBrightness(adjustPercent, getActivity());
-
-			// set indicator
-			indicatorImageView.setImageResource(R.drawable.ic_brightness);
-			indicatorTextView.setText(videoBrightness.getBrightnessString());
-
-			// Show indicator. It will be hidden once onGestureDone will be called
-			showIndicator();
-		}
-
 
 		@Override
 		public void adjustVolumeLevel(double adjustPercent) {
@@ -927,131 +882,4 @@ public class YouTubePlayerV2Fragment extends ImmersiveModeFragment implements Yo
 		}
 
 	}
-
-
-
-	////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-	/**
-	 * Adjust video's brightness.  Once the brightness is adjust, it is saved in the preferences to
-	 * be used when a new video is played.
-	 */
-	private static class VideoBrightness {
-
-		/** Current video brightness. */
-		private float   brightness;
-		/** Initial video brightness. */
-		private float   initialBrightness;
-		private final boolean disableGestures;
-
-		private static final String BRIGHTNESS_LEVEL_PREF = SkyTubeApp.getStr(R.string.pref_key_brightness_level);
-
-
-		/**
-		 * Constructor:  load the previously saved video brightness from the preference and set it.
-		 *
-		 * @param activity  Activity.
-		 */
-		public VideoBrightness(final Activity activity, final boolean disableGestures) {
-			loadBrightnessFromPreference();
-			initialBrightness = brightness;
-			this.disableGestures = disableGestures;
-
-			setVideoBrightness(0, activity);
-		}
-
-
-		/**
-		 * Set the video brightness.  Once the video brightness is updated, save it in the preference.
-		 *
-		 * @param adjustPercent Percentage.
-		 * @param activity      Activity.
-		 */
-		public void setVideoBrightness(double adjustPercent, final Activity activity) {
-			if (disableGestures) {
-				return;
-			}
-
-			// We are setting brightness percent to a value that should be from -1.0 to 1.0. We need to limit it here for these values first
-			if (adjustPercent < -1.0f) {
-				adjustPercent = -1.0f;
-			} else if (adjustPercent > 1.0f) {
-				adjustPercent = 1.0f;
-			}
-
-			// set the brightness instance variable
-			setBrightness(initialBrightness + (float) adjustPercent);
-			// adjust the video brightness as per this.brightness
-			adjustVideoBrightness(activity);
-			// save brightness to the preference
-			saveBrightnessToPreference();
-		}
-
-
-		/**
-		 * Adjust the video brightness.
-		 *
-		 * @param activity  Current activity.
-		 */
-		private void adjustVideoBrightness(final Activity activity) {
-			WindowManager.LayoutParams lp = activity.getWindow().getAttributes();
-			lp.screenBrightness = brightness;
-			activity.getWindow().setAttributes(lp);
-		}
-
-
-		/**
-		 * Saves {@link #brightness} to preference.
-		 */
-		private void saveBrightnessToPreference() {
-			SharedPreferences.Editor editor = SkyTubeApp.getPreferenceManager().edit();
-			editor.putFloat(BRIGHTNESS_LEVEL_PREF, brightness);
-			editor.apply();
-			Logger.d(this, "BRIGHTNESS: %f", brightness);
-		}
-
-
-		/**
-		 * Loads the brightness from preference and set the {@link #brightness} instance variable.
-		 */
-		private void loadBrightnessFromPreference() {
-			final float brightnessPref = SkyTubeApp.getPreferenceManager().getFloat(BRIGHTNESS_LEVEL_PREF, 1);
-			setBrightness(brightnessPref);
-		}
-
-
-		/**
-		 * Set the {@link #brightness} instance variable.
-		 *
-		 * @param brightness    Brightness (from 0.0 to 1.0).
-		 */
-		private void setBrightness(float brightness) {
-			if (brightness < 0) {
-				brightness = 0;
-			} else if (brightness > 1) {
-				brightness = 1;
-			}
-
-			this.brightness = brightness;
-		}
-
-
-		/**
-		 * @return Brightness as string:  e.g. "21%"
-		 */
-		public String getBrightnessString() {
-			return ((int) (brightness * 100)) + "%";
-		}
-
-
-		/**
-		 * To be called once the swipe gesture is done/completed.
-		 */
-		public void onGestureDone() {
-			initialBrightness = brightness;
-		}
-
-	}
-
 }

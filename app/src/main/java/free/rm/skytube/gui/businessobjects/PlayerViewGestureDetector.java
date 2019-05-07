@@ -67,12 +67,6 @@ public abstract class PlayerViewGestureDetector implements View.OnTouchListener 
 
 
 	/**
-	 * Called when user wants to view video's comments.
-	 */
-	public abstract void onCommentsGesture();
-
-
-	/**
 	 * Called when user wants to view video's description.
 	 */
 	public abstract void onVideoDescriptionGesture();
@@ -82,13 +76,6 @@ public abstract class PlayerViewGestureDetector implements View.OnTouchListener 
 	 * Called every time any gesture is ended.
 	 */
 	public abstract void onGestureDone();
-
-
-	/**
-	 * User swiped from top to bottom or from bottom to top at the left side of the view.
-	 */
-	public abstract void adjustBrightness(double adjustPercent);
-
 
 	/**
 	 * User swiped from top to bottom or from bottom to top at the left side of the view.
@@ -160,14 +147,8 @@ public abstract class PlayerViewGestureDetector implements View.OnTouchListener 
 				double  xDistance = endEvent.getX() - startEvent.getX();
 				Rect    playerViewRect = getPlayerViewRect();
 
-				if (currentGestureEvent == SwipeGestureType.COMMENTS) {
-					onCommentsGesture();
-				} else if (currentGestureEvent == SwipeGestureType.DESCRIPTION) {
+				if (currentGestureEvent == SwipeGestureType.DESCRIPTION) {
 					onVideoDescriptionGesture();
-				} else if (currentGestureEvent == SwipeGestureType.BRIGHTNESS) {
-					// use half of BrightnessRect's height to calculate percent.
-					double percent = yDistance / (getBrightnessRect(playerViewRect).height() / 2f) * -1f;
-					adjustBrightness(percent);
 				} else if (currentGestureEvent == SwipeGestureType.VOLUME) {
 					// use half of volumeRect's height to calculate percent.
 					double percent = yDistance / (getVolumeRect(playerViewRect).height() / 2f) * -1f;
@@ -212,16 +193,10 @@ public abstract class PlayerViewGestureDetector implements View.OnTouchListener 
 			final Rect  playerViewRect = getPlayerViewRect();
 
 			if (Math.abs(currentX - startX) >= SWIPE_THRESHOLD && Math.abs(currentX - startX) > Math.abs(currentY - startY)) {
-				if (getCommentsRect(playerViewRect).contains((int) startX, (int) startY) && diffX > 0) {
-					return SwipeGestureType.COMMENTS;
-				} else {
-					return SwipeGestureType.SEEK;
-				}
+				return SwipeGestureType.SEEK;
 			} else if (Math.abs(currentY - startY) >= SWIPE_THRESHOLD) {
 				if (getDescriptionRect(playerViewRect).contains((int) startX, (int) startY) && diffY > 0) {
 					return SwipeGestureType.DESCRIPTION;
-				} else if (getBrightnessRect(playerViewRect).contains((int) startX, (int) startY)) {
-					return SwipeGestureType.BRIGHTNESS;
 				} else if (getVolumeRect(playerViewRect).contains((int) startX, (int) startY)) {
 					return SwipeGestureType.VOLUME;
 				}
@@ -230,32 +205,12 @@ public abstract class PlayerViewGestureDetector implements View.OnTouchListener 
 			return SwipeGestureType.NONE;
 		}
 
-
-		/**
-		 * Here we decide in what place of the screen user should swipe to get a new brightness value.
-		 */
-		private Rect getBrightnessRect(final Rect playerViewRect) {
-			return new Rect(playerViewRect.right / 2, (int)(playerViewRect.bottom * 0.2),   // top (X, Y) coordinates
-					playerViewRect.right, playerViewRect.bottom);                                // bottom (X, Y) coordinates
-		}
-
-
 		/**
 		 * Here we decide in what place of the screen user should swipe to get a new volume value.
 		 */
 		private Rect getVolumeRect(final Rect playerViewRect) {
 			return new Rect(0, (int)(playerViewRect.bottom * 0.2),
 					playerViewRect.right / 2, playerViewRect.bottom);
-		}
-
-
-		/**
-		 * Here we choose a rect for swipe which then will be used to open the comments view.
-		 */
-		private Rect getCommentsRect(final Rect playerViewRect) {
-			// 20% from right side will trigger comments view
-			return new Rect((int) (playerViewRect.right - (playerViewRect.right * 0.2)), 0,
-					playerViewRect.right, playerViewRect.bottom);
 		}
 
 		/**
